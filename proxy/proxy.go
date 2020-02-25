@@ -98,12 +98,32 @@ func Server(conn *ssh.Client, remoteAddr string, localAddr string) {
 	}
 }
 
+func ReadCredentials(serverFile string, userFile string, id_rsaFile string) (string, string, ssh.Signer) {
+	rawServer, err := ioutil.ReadFile(serverFile)
+	if err != nil {
+		log.Fatalf("can't read SERVER (R)")
+	}
+	rawUser, err := ioutil.ReadFile(userFile)
+	if err != nil {
+		log.Fatalf("can't read USER")
+	}
+
+	buff, _ := ioutil.ReadFile(id_rsaFile)
+	id_rsa, err := ssh.ParsePrivateKey(buff)
+	if err != nil {
+		log.Fatalf("can't read id_rsa")
+	}
+
+	server := strings.TrimSuffix(string(rawServer), "\n")
+	user := strings.TrimSuffix(string(rawUser), "\n")
+
+	return server, user,id_rsa
+}
+
 func Proxy() {
 	// Connection settings
 
-
-
-	server, err := ioutil.ReadFile("/credentials/SERVER")
+	rawServer, err := ioutil.ReadFile("/credentials/SERVER")
 	if err != nil {
 		log.Fatalf("can't read SERVER")
 	}
@@ -112,7 +132,7 @@ func Proxy() {
 		log.Fatalf("can't read USER")
 	}
 
-	sshAddr := strings.TrimSuffix(string(server), "\n")
+	server := strings.TrimSuffix(string(rawServer), "\n")
 	suser := strings.TrimSuffix(string(user), "\n")
 
 	localAddr := "0.0.0.0:3000"
@@ -125,8 +145,8 @@ func Proxy() {
 	}
 
 	log.Printf("...start Dial...")
-	// Establish connection with SSH server
-	conn, err := ssh.Dial("tcp", sshAddr, cfg)
+	// Establish connection with SSH rawServer
+	conn, err := ssh.Dial("tcp", server, cfg)
 	if err != nil {
 		log.Fatalln(err)
 	}
