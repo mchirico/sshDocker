@@ -18,15 +18,18 @@ package main
 import (
 	"fmt"
 	"github.com/mchirico/sshproxy-action/sshDocker/pkg"
+	"github.com/mchirico/sshproxy-action/sshDocker/proxy"
 	"log"
 	"os"
 )
 
 func main() {
 	forever := make(chan bool)
+	go proxy.Proxy()
+
 	args := os.Args[1:]
 	fmt.Printf("::set-output name=time::%s\n", pkg.Speak(args))
-
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+
 	<-forever
 }
