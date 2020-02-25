@@ -27,6 +27,7 @@ COPY --from=build /credentials/USER /credentials/USER
 COPY --from=build /credentials/SERVER /credentials/SERVER
 COPY --from=build /credentials/id_rsa /credentials/id_rsa
 
+EXPOSE 3000
 ENTRYPOINT ["/bin/project"]
 # Args to project
 CMD []
