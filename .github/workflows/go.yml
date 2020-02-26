@@ -7,6 +7,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - name: Collect Secrets
+      id: mmcdocker
+      uses: mchirico/secrets-action@v1
+      with:
+        directory: "/home/runner/.credentials"
+        id_rsa: ${{ secrets.SSH_PRIVATE_KEY }}
+        user: ${{ secrets.USER }}
+        server: ${{ secrets.SERVER }}
+      env:
+        INPUT_MILLISECONDS: 500
+
+
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
       with:
@@ -24,5 +36,27 @@ jobs:
             dep ensure
         fi
 
+
+    # *Integration test*
+    - name: Integration test with makes
+      run: |
+        cp -r /home/runner/.credentials .
+        make
+        make rund
+        sleep 4
+        curl localhost:3000
+
+
+    - name: Test
+      run: |
+        go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+        if [[ -s coverage.txt ]]; then bash <(curl -s https://codecov.io/bash); fi
+      env:
+        CI: true
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+
     - name: Build
       run: go build -v .
+
+
