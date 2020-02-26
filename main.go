@@ -25,7 +25,12 @@ import (
 
 func main() {
 	forever := make(chan bool)
-	go proxy.Proxy()
+	go proxy.Proxy("0.0.0.0:3000",
+		"127.0.0.1:3000")
+	go proxy.Proxy("0.0.0.0:8080",
+		"127.0.0.1:8080")
+	go proxy.Proxy("0.0.0.0:6379",
+		"127.0.0.1:6379")
 
 	args := os.Args[1:]
 	fmt.Printf("::set-output name=time::%s\n", pkg.Speak(args))

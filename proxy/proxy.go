@@ -163,12 +163,12 @@ func (c *Creds) Connect(localAddr string, remoteAddr string) {
 	Server(conn, remoteAddr, localAddr)
 	log.Printf("connection...")
 	// Multiple
-	//go Server(conn, remoteAddr, localAddr)
+	// go Server(conn, "0.0.0.0:8080", localAddr)
 	//Server(conn, "127.0.0.1:9090", "127.0.0.1:9090")
 
 }
 
-func Proxy() error {
+func Proxy(localAddr string, remoteAddr string) error {
 	serverFile := "/credentials/SERVER"
 	userFile := "/credentials/USER"
 	idRsafile := "/credentials/id_rsa"
@@ -178,8 +178,6 @@ func Proxy() error {
 		return err
 	}
 
-	localAddr := "0.0.0.0:3000"
-	remoteAddr := "127.0.0.1:3000"
 	creds.Connect(localAddr, remoteAddr)
 	return nil
 }
