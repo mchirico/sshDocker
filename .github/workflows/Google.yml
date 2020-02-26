@@ -1,0 +1,46 @@
+name: Goolge Services Testing...
+
+on: [push]
+
+
+jobs:
+  build:
+    name: Google Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+
+    # Setup gcloud CLI
+    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      with:
+        version: 'latest'
+        service_account_key: ${{ secrets.OWNER }}
+
+
+    # Configure docker to use the gcloud command-line tool as a credential helper
+    - run: |
+        # Set up docker to authenticate
+        # via gcloud command-line tool.
+        gcloud auth configure-docker
+
+
+    # BigQuery
+    - name: Working with BigQuery
+      run: |
+       txt="sshDocker " 
+       bq query --nouse_legacy_sql 'CREATE TABLE IF NOT EXISTS  `pigdevonlyx.github.log` (msg string, timeEnter timestamp);'
+       bq query --nouse_legacy_sql  --parameter=MSG:STRING:"${txt}"  'insert into `pigdevonlyx.github.log` (msg,timeEnter) values (@MSG,CURRENT_TIMESTAMP())'
+
+
+
+
