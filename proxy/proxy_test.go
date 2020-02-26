@@ -1,10 +1,22 @@
 package proxy
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestSpeak(t *testing.T) {
+func TestSetFiles(t *testing.T) {
 	serverFile := "../.credentials/SERVER"
 	userFile := "../.credentials/USER"
 	idRsafile := "../.credentials/id_rsa"
-	ReadCredentials(serverFile, userFile, idRsafile)
+	creds := NewCreds(serverFile, userFile, idRsafile)
+	err := creds.ReadCredentials()
+	if err != nil {
+		t.FailNow()
+	}
+
+	_, err = makeSshConfig(creds.user, creds.id_rsa)
+	if err != nil {
+		t.Fatalf("makeSshConfig: %s", creds.user)
+	}
+
 }
