@@ -76,7 +76,7 @@ func exec(user string, server string, command string, results chan string) {
 	// Ignore key validation
 	config.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
-	log.Printf("server: %v\n",server)
+	log.Printf("server: %v\n", server)
 	client, err := ssh.Dial("tcp", server, config)
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
@@ -111,14 +111,14 @@ func RunME() {
 	if err != nil {
 		log.Fatalf("can't read USER")
 	}
-	server, err :=  ioutil.ReadFile("/credentials/SERVER")
+	server, err := ioutil.ReadFile("/credentials/SERVER")
 	if err != nil {
 		log.Fatalf("can't read SERVER")
 	}
 
 	sserver := strings.TrimSuffix(string(server), "\n")
 	suser := strings.TrimSuffix(string(user), "\n")
-	log.Printf("server: ->%s<-\n",string(server))
+	log.Printf("server: ->%s<-\n", string(server))
 	command := "uptime >out.out;sleep 10"
 
 	go exec(suser, sserver, command, results)

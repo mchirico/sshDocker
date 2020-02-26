@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 )
 
 // Get default location of a private key
@@ -27,11 +28,7 @@ func parsePrivateKey(keyPath string) (ssh.Signer, error) {
 
 // Get ssh client config for our connection
 // SSH config will use 2 authentication strategies: by key and by password
-func makeSshConfig(user string) (*ssh.ClientConfig, error) {
-	key, err := parsePrivateKey(privateKeyPath())
-	if err != nil {
-		return nil, err
-	}
+func makeSshConfig(user string, key ssh.Signer) (*ssh.ClientConfig, error) {
 
 	config := ssh.ClientConfig{
 		User: user,
@@ -98,55 +95,65 @@ func Server(conn *ssh.Client, remoteAddr string, localAddr string) {
 	}
 }
 
-func ReadCredentials(serverFile string, userFile string, id_rsaFile string) (string, string, ssh.Signer) {
-	rawServer, err := ioutil.ReadFile(serverFile)
-	if err != nil {
-		log.Fatalf("can't read SERVER (R)")
-	}
-	rawUser, err := ioutil.ReadFile(userFile)
-	if err != nil {
-		log.Fatalf("can't read USER")
-	}
-
-	buff, _ := ioutil.ReadFile(id_rsaFile)
-	id_rsa, err := ssh.ParsePrivateKey(buff)
-	if err != nil {
-		log.Fatalf("can't read id_rsa")
-	}
-
-	server := strings.TrimSuffix(string(rawServer), "\n")
-	user := strings.TrimSuffix(string(rawUser), "\n")
-
-	return server, user,id_rsa
+type Creds struct {
+	sync.Mutex
+	user       string
+	server     string
+	id_rsa     ssh.Signer
+	userFile   string
+	serverFile string
+	id_rsaFile string
 }
 
-func Proxy() {
-	// Connection settings
+func NewCreds(serverFile string, userFile string, id_rsaFile string) *Creds {
 
-	rawServer, err := ioutil.ReadFile("/credentials/SERVER")
+	return &Creds{serverFile: serverFile, userFile: userFile, id_rsaFile: id_rsaFile}
+}
+
+func (c *Creds) ReadCredentials() error {
+	c.Lock()
+	defer c.Unlock()
+
+	rawServer, err := ioutil.ReadFile(c.serverFile)
 	if err != nil {
-		log.Fatalf("can't read SERVER")
+		log.Printf("Can't read serverFile: %s\n", c.serverFile)
+		return err
 	}
-	user, err := ioutil.ReadFile("/credentials/USER")
+	rawUser, err := ioutil.ReadFile(c.userFile)
 	if err != nil {
-		log.Fatalf("can't read USER")
+		log.Printf("Can't read userFile: %s\n", c.userFile)
+		return err
 	}
 
-	server := strings.TrimSuffix(string(rawServer), "\n")
-	suser := strings.TrimSuffix(string(user), "\n")
+	buff, _ := ioutil.ReadFile(c.id_rsaFile)
+	id_rsa, err := ssh.ParsePrivateKey(buff)
+	if err != nil {
+		log.Printf("Can't read id_rsaFile: %s\n", c.id_rsaFile)
+		return err
+	}
 
-	localAddr := "0.0.0.0:3000"
-	remoteAddr := "127.0.0.1:3000"
+	c.server = strings.TrimSuffix(string(rawServer), "\n")
+	c.user = strings.TrimSuffix(string(rawUser), "\n")
+	c.id_rsa = id_rsa
+	return nil
+}
+
+// localAddr := "0.0.0.0:3000"
+// remoteAddr := "127.0.0.1:3000"
+func (c *Creds) Connect(localAddr string, remoteAddr string) {
+	c.Lock()
+	defer c.Unlock()
 
 	// Build SSH client configuration
-	cfg, err := makeSshConfig(suser)
+	cfg, err := makeSshConfig(c.user, c.id_rsa)
 	if err != nil {
+		log.Printf("makeSshConfig: %s", c.user)
 		log.Fatalln(err)
 	}
 
 	log.Printf("...start Dial...")
 	// Establish connection with SSH rawServer
-	conn, err := ssh.Dial("tcp", server, cfg)
+	conn, err := ssh.Dial("tcp", c.server, cfg)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -159,4 +166,20 @@ func Proxy() {
 	//go Server(conn, remoteAddr, localAddr)
 	//Server(conn, "127.0.0.1:9090", "127.0.0.1:9090")
 
+}
+
+func Proxy() error {
+	serverFile := "/credentials/SERVER"
+	userFile := "/credentials/USER"
+	idRsafile := "/credentials/id_rsa"
+	creds := NewCreds(serverFile, userFile, idRsafile)
+	err := creds.ReadCredentials()
+	if err != nil {
+		return err
+	}
+
+	localAddr := "0.0.0.0:3000"
+	remoteAddr := "127.0.0.1:3000"
+	creds.Connect(localAddr, remoteAddr)
+	return nil
 }

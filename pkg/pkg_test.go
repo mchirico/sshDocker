@@ -14,7 +14,7 @@ import (
 func TestWalk(t *testing.T) {
 	result := Walk(".")
 
-	if ! strings.Contains(".",result[0]) {
+	if !strings.Contains(".", result[0]) {
 		t.FailNow()
 	}
 }
