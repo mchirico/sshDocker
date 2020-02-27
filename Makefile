@@ -10,10 +10,10 @@ build:
 	go build -v .
 
 run:
-	docker run --rm -it --name docker-action -p 3000:3000  gcr.io/mchirico/sshproxy-action:test
+	docker run --rm -it --name docker-action -p 3000:3000 -p 8080:8080 -p 6379:6379 gcr.io/mchirico/sshproxy-action:test
 
 rund:
-	docker run -d --rm -it --name docker-action -p 3000:3000  gcr.io/mchirico/sshproxy-action:test
+	docker run -d --rm -it --name docker-action -p 3000:3000 -p 8080:8080 -p 6379:6379 gcr.io/mchirico/sshproxy-action:test
 
 stop:
 	docker stop docker-action
